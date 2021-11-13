@@ -19,12 +19,13 @@ USAGE: {sys.argv[0]} true|false /path/to/executable [args]
 
 
 import numpy as np
-import frida
 import hashlib
 import subprocess
 import time
+import frida
 
 def on_message(message, data):
+   try:
        message=message['payload']
        if 'enter' in message:
          print ('====='+message+'=====')
@@ -35,32 +36,39 @@ def on_message(message, data):
          k = hashlib.sha224(bytes(message, encoding='ascii')).hexdigest()
          fname_counters.setdefault(k,0)
          fname_counters[k] += 1
-         fname = f'{k}.{fname_counters[k]}'
+         fname = f'{write_count}.{fname_counters[k]}.npy'
          dn=np.frombuffer(data,dtype='float64')
          if write_count < write_limit:
+           try:
             if write:
                print(f'writing to {fname}')
                np.save(fname, dn)
             else:
                print(f'reading from {fname}')
                dl = np.load(fname)
-               print ((dl-dn).sum())
-            write_count += 1
+               print (np.abs((dl-dn)).sum())
+           except FileNotFoundError:
+               print(f'file not found {fname}')
+
+           write_count += 1
        if 'exit' in message:
           print ('====='+message+'=====')
+   except KeyError:
+      print (message,data)
 
-print(executable)
-with subprocess.Popen(executable,stdin=subprocess.PIPE,stdout=subprocess.PIPE) as proc:
    
-   scr= open('frida.js','r')
-   scr_=scr.read()
-   print(scr_)
-   time.sleep(0.1)
-   session = frida.attach(proc.pid)
-   script = session.create_script(scr_)
-   scr.close()
-   script.on("message", on_message)
-   script.load()
-   while proc.poll() is None:
-     print('.', end='', flush=True)
-     time.sleep(1)
+scr= open('frida.js','r')
+scr_=scr.read()
+scr.close()
+dbg_symbols=f'''//DebugSymbol.load("{executable[0]}");
+'''
+print(dbg_symbols)
+pid = frida.spawn(executable)
+print(executable)
+session = frida.attach(pid)
+script = session.create_script(dbg_symbols+scr_)
+script.on("message", on_message)
+script.load()
+frida.resume(pid)
+sys.stdin.read()
+frida.kill(pid)

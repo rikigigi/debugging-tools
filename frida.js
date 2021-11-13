@@ -122,16 +122,24 @@ function read_gfc_array_9_3(ptr) {
    return descr['base_addr'].readPointer().readByteArray(tot_size*descr['dtype']['elem_len']);
 }
 
+
+function get_runcg_addr(){
+  if (DebugSymbol.fromName('__cg_sub_MOD_runcg_uspp').address == 0x0){
+   return DebugSymbol.fromName('runcg_uspp_').address
+  } else {
+   return DebugSymbol.fromName('__cg_sub_MOD_runcg_uspp').address
+  }
+}
+
 Interceptor.attach(
-      DebugSymbol.fromName('__cg_sub_MOD_runcg_uspp').address,
+      get_runcg_addr(),
       {
           onEnter : function(args) {
                        this._arg0=args[0].readPointer().toInt32();
                        this._fion=args[fion_idx];
-                       var fion = this._fion.readByteArray(3*nat*8);
-                       send("enter nfi " + this._arg0,fion );
+                       send("enter runcg nfi " + this._arg0 );
                     },
-          onLeave: function() {send("exit nfi "+this._arg0,this._fion.readByteArray(3*nat*8));}
+          onLeave: function() {send("exit runcg nfi "+this._arg0,read_gfc_array_9_3(this._fion));}
       });
 Interceptor.attach(
       DebugSymbol.fromName('vofrho_x_').address,
@@ -139,11 +147,13 @@ Interceptor.attach(
           onEnter : function(args) {
                        this._arg0v=args[0].readPointer().toInt32();
                        this._fionv=args[fion_idx_v];
-                       var fionv = read_gfc_array_descriptor_9_3(this._fionv);
                        send('enter '+JSON.stringify(read_gfc_array_descriptor_9_3(this._fionv)));
-                       send("enter vofrho nfi " + this._arg0v,read_gfc_array_9_3(this._fionv) );
+                       send("enter vofrho nfi " + this._arg0v );
                     },
-          onLeave: function() {send("exit vofrho nfi "+this._arg0v,read_gfc_array_9_3(this._fionv));}
+          onLeave: function() {
+        const bt = '' + Thread.backtrace(this.context, Backtracer.ACCURATE)
+        .map(DebugSymbol.fromAddress).join('\n') + '\n';
+             send("exit vofrho nfi "+bt+this._arg0v,read_gfc_array_9_3(this._fionv));}
       });
 //Interceptor.attach(
 //      DebugSymbol.fromName('vofesr_').address,
