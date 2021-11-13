@@ -36,7 +36,7 @@ def on_message(message, data):
          k = hashlib.sha224(bytes(message, encoding='ascii')).hexdigest()
          fname_counters.setdefault(k,0)
          fname_counters[k] += 1
-         fname = f'{write_count}.{fname_counters[k]}.npy'
+         fname = f'{write_count}.npy'
          dn=np.frombuffer(data,dtype='float64')
          if write_count < write_limit:
            try:
