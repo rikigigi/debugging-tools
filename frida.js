@@ -139,7 +139,34 @@ Interceptor.attach(
                        this._fion=args[fion_idx];
                        send("enter runcg nfi " + this._arg0 );
                     },
-          onLeave: function() {send("exit runcg nfi "+this._arg0,read_gfc_array_9_3(this._fion));}
+          onLeave: function() {send("exit_runcg_nfi_"+this._arg0,this._fion.readByteArray(nat*3*8));}
+      });
+Interceptor.attach(
+      DebugSymbol.fromName('nlfl_bgrp_x_').address,
+      {
+          onEnter : function(args) {
+                       this._fionv=args[4];
+                       send('enter '+JSON.stringify(read_gfc_array_descriptor_9_3(this._fionv)));
+                       send("enter_nlfl_bgrp_x_", read_gfc_array_9_3(this._fionv));
+                       send("enter_nlfl_bgrp_x_lambda", read_gfc_array_9_3(args[2]));
+                    },
+          onLeave: function() {
+        //const bt = '' + Thread.backtrace(this.context, Backtracer.ACCURATE)
+        //.map(DebugSymbol.fromAddress).join('\n') + '\n';
+             send("exit_nlfl_bgrp_x_",read_gfc_array_9_3(this._fionv));}
+      });
+Interceptor.attach(
+      DebugSymbol.fromName('nlfq_bgrp_x_').address,
+      {
+          onEnter : function(args) {
+                       this._fionv=args[4];
+                       send('enter '+JSON.stringify(read_gfc_array_descriptor_9_3(this._fionv)));
+                       send("enter_nlfq_bgrp_x_", read_gfc_array_9_3(this._fionv));
+                    },
+          onLeave: function() {
+        //const bt = '' + Thread.backtrace(this.context, Backtracer.ACCURATE)
+        //.map(DebugSymbol.fromAddress).join('\n') + '\n';
+             send("exit_nlfq_bgrp_x_",read_gfc_array_9_3(this._fionv));}
       });
 Interceptor.attach(
       DebugSymbol.fromName('vofrho_x_').address,
@@ -153,7 +180,7 @@ Interceptor.attach(
           onLeave: function() {
         const bt = '' + Thread.backtrace(this.context, Backtracer.ACCURATE)
         .map(DebugSymbol.fromAddress).join('\n') + '\n';
-             send("exit vofrho nfi "+bt+this._arg0v,read_gfc_array_9_3(this._fionv));}
+             send("exit_vofrho_"+this._arg0v,read_gfc_array_9_3(this._fionv));}
       });
 //Interceptor.attach(
 //      DebugSymbol.fromName('vofesr_').address,

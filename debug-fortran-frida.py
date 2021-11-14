@@ -1,9 +1,9 @@
 import sys
 write=True
 fname_counters={}
-write_limit = 100
+write_limit = 200
 write_count = 0
-
+rewrite_thre = 1.0
 executable=[]
 arguments=[]
 
@@ -36,7 +36,7 @@ def on_message(message, data):
          k = hashlib.sha224(bytes(message, encoding='ascii')).hexdigest()
          fname_counters.setdefault(k,0)
          fname_counters[k] += 1
-         fname = f'{write_count}.npy'
+         fname = f'{message}_{write_count}.npy'
          dn=np.frombuffer(data,dtype='float64')
          if write_count < write_limit:
            try:
@@ -46,7 +46,12 @@ def on_message(message, data):
             else:
                print(f'reading from {fname}')
                dl = np.load(fname)
-               print (np.abs((dl-dn)).sum())
+               s = np.abs((dl-dn)).sum()
+               print (s)
+               if s > rewrite_thre:
+                  fnr = 'rewrited_'+fname
+                  print(f'saving different file to {fnr}')
+                  np.save(fnr, dn)
            except FileNotFoundError:
                print(f'file not found {fname}')
 
