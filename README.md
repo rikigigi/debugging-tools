@@ -22,7 +22,7 @@ It does the following:
 
 # porting to different compilers
 
- The non portable code is located in [](frida.js). Yes it is javascript.
+ The non portable code is located in [frida.js](frida.js). Yes it is javascript.
  
  The headache comes from the fortran array descriptor, that is not fixed by the standard. So I built some facilities to read this in a fast way without much work if you change compiler.
  In the code the most core function is `read_struct` that is a convenient way of reading memory into a javascript dictionary given an array that describes how the memory is used. The array descriptor format for gfortran 9.3 is read by the function `read_gfc_array_descriptor_9_3`. The array passed to `read_struct` function has the following format:
@@ -96,6 +96,23 @@ The source of this information for gfortran is the source code: the struct of th
 
 and can ber easily found by grepping `GFC_ARRAY_DESCRIPTOR`. The last struct (defined by a macro) is completely equivalent by the array provided above when speaking of memory layout
 
+Later this is used by an `Interceptor.attach` call, that tells FRIDA to execute some code when the cp.x code enters/exits a function. The symbols can be found with `nm cp.x | grep your_function_name`
+```
+Interceptor.attach(
+      DebugSymbol.fromName('nlfl_bgrp_x_').address,
+      {
+          onEnter : function(args) {
+                       this._fionv=args[4];
+                       send('enter '+JSON.stringify(read_gfc_array_descriptor_9_3(this._fionv)));
+                       send("enter_nlfl_bgrp_x_", read_gfc_array_9_3(this._fionv));
+                       send("enter_nlfl_bgrp_x_lambda", read_gfc_array_9_3(args[2]));
+                    },
+          onLeave: function() {
+             send("exit_nlfl_bgrp_x_",read_gfc_array_9_3(this._fionv));}
+      });
+
+```
+In this snippet the target function in fortran was named `nlfl_bgrp_x` and the target array was an assumed shape array located in position 5. If the array is not assumed shape it is simply a pointer and the size cannot be found in any descriptor, because there is no one. Then the data is sent to the python part of the code with the `send` call. The python part then transforms the array in a numpy array, and then it is elaborated.
 
 # example output
 
